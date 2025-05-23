@@ -49,6 +49,8 @@ const RoommateSearchPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   
   const [filters, setFilters] = useState<FilterState>({
     keyword: '',
@@ -65,22 +67,18 @@ const RoommateSearchPage: React.FC = () => {
   
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // List of lifestyle preferences to filter by
-  const lifestylePreferences = [
-    'non-smoking', 'non-drinking', 'pet-friendly', 
-    'early-riser', 'night-owl', 'vegetarian'
-  ];
-
   useEffect(() => {
     fetchRoommates();
-  }, []);
+  }, [page]);
 
   const fetchRoommates = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       // Build query string from filters
       let queryParams = new URLSearchParams();
+      queryParams.append('pageNumber', page.toString());
       if (filters.keyword) queryParams.append('keyword', filters.keyword);
       if (filters.city) queryParams.append('city', filters.city);
       if (filters.minBudget) queryParams.append('minBudget', filters.minBudget);
@@ -90,209 +88,14 @@ const RoommateSearchPage: React.FC = () => {
       if (filters.minAge) queryParams.append('minAge', filters.minAge);
       if (filters.maxAge) queryParams.append('maxAge', filters.maxAge);
       if (filters.moveInDate) queryParams.append('moveInDate', filters.moveInDate);
-      if (filters.lifestylePreferences.length > 0) {
-        queryParams.append('lifestylePreferences', filters.lifestylePreferences.join(','));
-      }
       
-      // In a real app, we would call the API with these filters
-      // For now, we'll just simulate a delay and show all roommates
-      
-      // Mock data for demonstration
-      const mockRoommates: Roommate[] = [
-        {
-          _id: '1',
-          name: 'Rahul Singh',
-          age: 24,
-          gender: 'male',
-          occupation: 'working',
-          budget: {
-            min: 8000,
-            max: 12000,
-          },
-          preferredLocation: {
-            city: 'Bangalore',
-            areas: ['Koramangala', 'Indiranagar', 'HSR Layout'],
-          },
-          moveInDate: '2023-07-15',
-          stayDuration: '6-12 months',
-          lifestyle: {
-            smoking: false,
-            drinking: true,
-            pets: false,
-            cooking: true,
-            earlyRiser: true,
-            nightOwl: false,
-          },
-          bio: 'Software engineer working at a startup. Clean, quiet, and respectful. I enjoy cooking and watching movies on weekends.',
-          profileImage: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg',
-        },
-        {
-          _id: '2',
-          name: 'Priya Sharma',
-          age: 22,
-          gender: 'female',
-          occupation: 'student',
-          budget: {
-            min: 6000,
-            max: 9000,
-          },
-          preferredLocation: {
-            city: 'Bangalore',
-            areas: ['Jayanagar', 'JP Nagar', 'Banashankari'],
-          },
-          moveInDate: '2023-06-01',
-          stayDuration: '3-6 months',
-          lifestyle: {
-            smoking: false,
-            drinking: false,
-            pets: true,
-            cooking: false,
-            earlyRiser: false,
-            nightOwl: true,
-          },
-          bio: 'Graduate student studying Computer Science. Looking for a clean and quiet place to stay. I have a small cat who is very well behaved.',
-          profileImage: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg',
-        },
-        {
-          _id: '3',
-          name: 'Amit Kumar',
-          age: 27,
-          gender: 'male',
-          occupation: 'working',
-          budget: {
-            min: 10000,
-            max: 15000,
-          },
-          preferredLocation: {
-            city: 'Bangalore',
-            areas: ['Whitefield', 'Marathahalli', 'Electronic City'],
-          },
-          moveInDate: '2023-08-01',
-          stayDuration: 'more than 12 months',
-          lifestyle: {
-            smoking: true,
-            drinking: true,
-            pets: false,
-            cooking: false,
-            earlyRiser: false,
-            nightOwl: true,
-          },
-          bio: 'Product manager at a tech company. I work long hours and mostly keep to myself. Looking for a modern apartment with good amenities.',
-        },
-        {
-          _id: '4',
-          name: 'Sneha Reddy',
-          age: 25,
-          gender: 'female',
-          occupation: 'working',
-          budget: {
-            min: 9000,
-            max: 14000,
-          },
-          preferredLocation: {
-            city: 'Bangalore',
-            areas: ['Indiranagar', 'Koramangala', 'Richmond Town'],
-          },
-          moveInDate: '2023-07-01',
-          stayDuration: '6-12 months',
-          lifestyle: {
-            smoking: false,
-            drinking: true,
-            pets: false,
-            cooking: true,
-            earlyRiser: true,
-            nightOwl: false,
-          },
-          bio: 'UX designer who loves cooking and yoga. Looking for like-minded roommates who appreciate cleanliness and occasional social gatherings.',
-          profileImage: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg',
-        },
-      ];
-
-      // Filter mock data based on search filters
-      let filteredRoommates = [...mockRoommates];
-      
-      if (filters.keyword) {
-        const keyword = filters.keyword.toLowerCase();
-        filteredRoommates = filteredRoommates.filter(roommate => 
-          roommate.name.toLowerCase().includes(keyword) || 
-          roommate.bio.toLowerCase().includes(keyword) ||
-          roommate.preferredLocation.city.toLowerCase().includes(keyword)
-        );
-      }
-      
-      if (filters.city) {
-        const city = filters.city.toLowerCase();
-        filteredRoommates = filteredRoommates.filter(roommate => 
-          roommate.preferredLocation.city.toLowerCase().includes(city)
-        );
-      }
-      
-      if (filters.minBudget) {
-        filteredRoommates = filteredRoommates.filter(roommate => 
-          roommate.budget.max >= Number(filters.minBudget)
-        );
-      }
-      
-      if (filters.maxBudget) {
-        filteredRoommates = filteredRoommates.filter(roommate => 
-          roommate.budget.min <= Number(filters.maxBudget)
-        );
-      }
-      
-      if (filters.gender) {
-        filteredRoommates = filteredRoommates.filter(roommate => 
-          roommate.gender === filters.gender
-        );
-      }
-      
-      if (filters.occupation) {
-        filteredRoommates = filteredRoommates.filter(roommate => 
-          roommate.occupation === filters.occupation
-        );
-      }
-      
-      if (filters.minAge) {
-        filteredRoommates = filteredRoommates.filter(roommate => 
-          roommate.age >= Number(filters.minAge)
-        );
-      }
-      
-      if (filters.maxAge) {
-        filteredRoommates = filteredRoommates.filter(roommate => 
-          roommate.age <= Number(filters.maxAge)
-        );
-      }
-      
-      if (filters.moveInDate) {
-        const filterDate = new Date(filters.moveInDate);
-        filteredRoommates = filteredRoommates.filter(roommate => {
-          const moveInDate = new Date(roommate.moveInDate);
-          return moveInDate <= filterDate;
-        });
-      }
-      
-      // Handle lifestyle preferences filtering
-      if (filters.lifestylePreferences.length > 0) {
-        filteredRoommates = filteredRoommates.filter(roommate => {
-          for (const pref of filters.lifestylePreferences) {
-            if (pref === 'non-smoking' && roommate.lifestyle.smoking) return false;
-            if (pref === 'non-drinking' && roommate.lifestyle.drinking) return false;
-            if (pref === 'pet-friendly' && !roommate.lifestyle.pets) return false;
-            if (pref === 'early-riser' && !roommate.lifestyle.earlyRiser) return false;
-            if (pref === 'night-owl' && !roommate.lifestyle.nightOwl) return false;
-          }
-          return true;
-        });
-      }
-      
-      setTimeout(() => {
-        setRoommates(filteredRoommates);
-        setLoading(false);
-      }, 500);
-      
-    } catch (error) {
+      const response = await axios.get(`/api/roommates?${queryParams.toString()}`);
+      setRoommates(response.data.roommates);
+      setTotalPages(response.data.pages);
+    } catch (error: any) {
       console.error('Error fetching roommates:', error);
-      setError('Failed to fetch roommates. Please try again.');
+      setError(error.response?.data?.message || 'Failed to fetch roommates');
+    } finally {
       setLoading(false);
     }
   };
@@ -305,29 +108,18 @@ const RoommateSearchPage: React.FC = () => {
     }));
   };
 
-  const handleLifestyleChange = (preference: string) => {
-    setFilters(prevFilters => {
-      const newPreferences = prevFilters.lifestylePreferences.includes(preference)
-        ? prevFilters.lifestylePreferences.filter(p => p !== preference)
-        : [...prevFilters.lifestylePreferences, preference];
-      
-      return {
-        ...prevFilters,
-        lifestylePreferences: newPreferences,
-      };
-    });
-  };
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setFilters(prevFilters => ({
       ...prevFilters,
       keyword: searchQuery,
     }));
+    setPage(1);
     fetchRoommates();
   };
 
   const applyFilters = () => {
+    setPage(1);
     fetchRoommates();
     setIsFilterOpen(false);
   };
@@ -346,6 +138,12 @@ const RoommateSearchPage: React.FC = () => {
       lifestylePreferences: [],
     });
     setSearchQuery('');
+    setPage(1);
+    fetchRoommates();
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
   };
 
   return (
@@ -529,28 +327,6 @@ const RoommateSearchPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Lifestyle Preferences
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {lifestylePreferences.map((preference) => (
-                  <div key={preference} className="flex items-center">
-                    <input
-                      id={`lifestyle-${preference}`}
-                      type="checkbox"
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                      checked={filters.lifestylePreferences.includes(preference)}
-                      onChange={() => handleLifestyleChange(preference)}
-                    />
-                    <label htmlFor={`lifestyle-${preference}`} className="ml-2 text-sm text-gray-700">
-                      {preference.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
             <div className="flex justify-end space-x-4">
               <button
                 type="button"
@@ -595,29 +371,46 @@ const RoommateSearchPage: React.FC = () => {
             </div>
           ) : (
             <>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {roommates.length} {roommates.length === 1 ? 'Result' : 'Results'}
-                </h2>
-                <div className="flex items-center">
-                  <label htmlFor="sort" className="text-sm text-gray-700 mr-2">Sort by:</label>
-                  <select
-                    id="sort"
-                    className="rounded-md border border-gray-300 px-3 py-1 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  >
-                    <option value="date">Most Recent</option>
-                    <option value="budget_low">Budget: Low to High</option>
-                    <option value="budget_high">Budget: High to Low</option>
-                    <option value="age">Age</option>
-                  </select>
-                </div>
-              </div>
-              
               <div className="space-y-6">
                 {roommates.map((roommate) => (
                   <RoommateCard key={roommate._id} roommate={roommate} />
                 ))}
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-8">
+                  <nav className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handlePageChange(page - 1)}
+                      disabled={page === 1}
+                      className="btn btn-outline py-2 px-4 disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`btn ${
+                          pageNum === page ? 'btn-primary' : 'btn-outline'
+                        } py-2 px-4`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                    
+                    <button
+                      onClick={() => handlePageChange(page + 1)}
+                      disabled={page === totalPages}
+                      className="btn btn-outline py-2 px-4 disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </nav>
+                </div>
+              )}
             </>
           )}
         </div>

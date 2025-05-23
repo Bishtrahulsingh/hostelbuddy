@@ -38,6 +38,8 @@ const HostelSearchPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   
   const [filters, setFilters] = useState<FilterState>({
     keyword: '',
@@ -59,14 +61,16 @@ const HostelSearchPage: React.FC = () => {
 
   useEffect(() => {
     fetchHostels();
-  }, []);
+  }, [page]);
 
   const fetchHostels = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       // Build query string from filters
       let queryParams = new URLSearchParams();
+      queryParams.append('pageNumber', page.toString());
       if (filters.keyword) queryParams.append('keyword', filters.keyword);
       if (filters.city) queryParams.append('city', filters.city);
       if (filters.minPrice) queryParams.append('minPrice', filters.minPrice);
@@ -75,145 +79,13 @@ const HostelSearchPage: React.FC = () => {
       if (filters.gender) queryParams.append('gender', filters.gender);
       if (filters.amenities.length > 0) queryParams.append('amenities', filters.amenities.join(','));
       
-      // In a real app, we would call the API with these filters
-      // For now, we'll just simulate a delay and show all hostels
-      
-      // Mock data for demonstration
-      const mockHostels: Hostel[] = [
-        {
-          _id: '1',
-          name: 'Sunshine Hostel',
-          images: ['https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg'],
-          address: {
-            street: '123 College Road',
-            city: 'Bangalore',
-            state: 'Karnataka',
-            zipCode: '560001',
-            country: 'India',
-          },
-          price: 8000,
-          rating: 4.2,
-          numReviews: 24,
-          vacancies: 5,
-          gender: 'male',
-          type: 'hostel',
-          amenities: ['WiFi', 'AC', 'Laundry', 'Security'],
-        },
-        {
-          _id: '2',
-          name: 'Green Valley PG',
-          images: ['https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg'],
-          address: {
-            street: '45 MG Road',
-            city: 'Bangalore',
-            state: 'Karnataka',
-            zipCode: '560002',
-            country: 'India',
-          },
-          price: 10000,
-          rating: 4.5,
-          numReviews: 15,
-          vacancies: 2,
-          gender: 'female',
-          type: 'pg',
-          amenities: ['WiFi', 'AC', 'TV', 'Hot Water', 'Kitchen'],
-        },
-        {
-          _id: '3',
-          name: 'Campus Corner Apartments',
-          images: ['https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg'],
-          address: {
-            street: '789 Tech Park',
-            city: 'Bangalore',
-            state: 'Karnataka',
-            zipCode: '560003',
-            country: 'India',
-          },
-          price: 15000,
-          rating: 4.8,
-          numReviews: 31,
-          vacancies: 3,
-          gender: 'coed',
-          type: 'apartment',
-          amenities: ['WiFi', 'AC', 'Parking', 'Gym', 'Security', 'Study Room'],
-        },
-        {
-          _id: '4',
-          name: 'Serene Stay PG',
-          images: ['https://images.pexels.com/photos/1571468/pexels-photo-1571468.jpeg'],
-          address: {
-            street: '56 Church Street',
-            city: 'Bangalore',
-            state: 'Karnataka',
-            zipCode: '560004',
-            country: 'India',
-          },
-          price: 9500,
-          rating: 4.0,
-          numReviews: 18,
-          vacancies: 7,
-          gender: 'female',
-          type: 'pg',
-          amenities: ['WiFi', 'Hot Water', 'Laundry', 'Power Backup'],
-        },
-      ];
-
-      // Filter mock data based on search filters
-      let filteredHostels = [...mockHostels];
-      
-      if (filters.keyword) {
-        const keyword = filters.keyword.toLowerCase();
-        filteredHostels = filteredHostels.filter(hostel => 
-          hostel.name.toLowerCase().includes(keyword) || 
-          hostel.address.city.toLowerCase().includes(keyword)
-        );
-      }
-      
-      if (filters.city) {
-        const city = filters.city.toLowerCase();
-        filteredHostels = filteredHostels.filter(hostel => 
-          hostel.address.city.toLowerCase().includes(city)
-        );
-      }
-      
-      if (filters.minPrice) {
-        filteredHostels = filteredHostels.filter(hostel => 
-          hostel.price >= Number(filters.minPrice)
-        );
-      }
-      
-      if (filters.maxPrice) {
-        filteredHostels = filteredHostels.filter(hostel => 
-          hostel.price <= Number(filters.maxPrice)
-        );
-      }
-      
-      if (filters.type) {
-        filteredHostels = filteredHostels.filter(hostel => 
-          hostel.type === filters.type
-        );
-      }
-      
-      if (filters.gender) {
-        filteredHostels = filteredHostels.filter(hostel => 
-          hostel.gender === filters.gender
-        );
-      }
-      
-      if (filters.amenities.length > 0) {
-        filteredHostels = filteredHostels.filter(hostel => 
-          filters.amenities.every(amenity => hostel.amenities.includes(amenity))
-        );
-      }
-      
-      setTimeout(() => {
-        setHostels(filteredHostels);
-        setLoading(false);
-      }, 500);
-      
-    } catch (error) {
+      const response = await axios.get(`/api/hostels?${queryParams.toString()}`);
+      setHostels(response.data.hostels);
+      setTotalPages(response.data.pages);
+    } catch (error: any) {
       console.error('Error fetching hostels:', error);
-      setError('Failed to fetch hostels. Please try again.');
+      setError(error.response?.data?.message || 'Failed to fetch hostels. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -245,10 +117,12 @@ const HostelSearchPage: React.FC = () => {
       ...prevFilters,
       keyword: searchQuery,
     }));
+    setPage(1);
     fetchHostels();
   };
 
   const applyFilters = () => {
+    setPage(1);
     fetchHostels();
     setIsFilterOpen(false);
   };
@@ -264,6 +138,12 @@ const HostelSearchPage: React.FC = () => {
       amenities: [],
     });
     setSearchQuery('');
+    setPage(1);
+    fetchHostels();
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
   };
 
   return (
@@ -467,29 +347,46 @@ const HostelSearchPage: React.FC = () => {
             </div>
           ) : (
             <>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {hostels.length} {hostels.length === 1 ? 'Result' : 'Results'}
-                </h2>
-                <div className="flex items-center">
-                  <label htmlFor="sort" className="text-sm text-gray-700 mr-2">Sort by:</label>
-                  <select
-                    id="sort"
-                    className="rounded-md border border-gray-300 px-3 py-1 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  >
-                    <option value="price_low">Price: Low to High</option>
-                    <option value="price_high">Price: High to Low</option>
-                    <option value="rating">Rating</option>
-                    <option value="newest">Newest</option>
-                  </select>
-                </div>
-              </div>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {hostels.map((hostel) => (
                   <HostelCard key={hostel._id} hostel={hostel} />
                 ))}
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-8">
+                  <nav className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handlePageChange(page - 1)}
+                      disabled={page === 1}
+                      className="btn btn-outline py-2 px-4 disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`btn ${
+                          pageNum === page ? 'btn-primary' : 'btn-outline'
+                        } py-2 px-4`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                    
+                    <button
+                      onClick={() => handlePageChange(page + 1)}
+                      disabled={page === totalPages}
+                      className="btn btn-outline py-2 px-4 disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </nav>
+                </div>
+              )}
             </>
           )}
         </div>
